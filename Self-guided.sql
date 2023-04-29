@@ -175,19 +175,33 @@ WHERE account_id = 396;
 
 /* 21. Continuing with the previous example, rank the top 10 account_ids based on their difference.*/
 SELECT account_id,
-	FLOOR(SUM(CASE WHEN `type` = 'PRIJEM' THEN amount ELSE 0 END)) AS Incoming_amount,
-	FLOOR(SUM(CASE WHEN `type` = 'VYDAJ' THEN amount ELSE 0 END)) AS Outgoing_amount,
-	FLOOR(SUM(CASE WHEN `type` = 'PRIJEM' THEN amount ELSE -amount END)) AS Difference
+	FLOOR(SUM(CASE WHEN `type` = 'PRIJEM' THEN amount END)) AS Incoming_amount,
+	FLOOR(SUM(CASE WHEN `type` = 'VYDAJ' THEN amount END)) AS Outgoing_amount,
+	FLOOR(SUM(CASE WHEN `type` = 'PRIJEM' THEN amount WHEN `type` = 'VYDAJ' THEN -amount END)) AS Difference
 FROM trans
 GROUP BY account_id
 ORDER BY Difference DESC;
 
+/*Usando el FORMAT, convierte el valor numérico en una cadena de texto y ordena los resultados primero los que 
+tengan un punto (.) y posteriormente los que tenga una coma (,). Por ejemplo: Primero ordena 99.00 y más abajo 
+(como un valor numérico inferior al 99,918.10
+Por lo tanto, usaar FORMAT para responder esta pregunta resulta erróneo.*/
 SELECT account_id,
-	FORMAT(SUM(CASE WHEN `type` = 'PRIJEM' THEN amount ELSE 0 END), 2) AS Incoming_amount,
-	FORMAT(SUM(CASE WHEN `type` = 'VYDAJ' THEN amount ELSE 0 END), 2) AS Outgoing_amount,
-	FORMAT(SUM(CASE WHEN `type` = 'PRIJEM' THEN amount ELSE -amount END), 2) AS Difference
+	FORMAT(SUM(CASE WHEN `type` = 'PRIJEM' THEN amount END),2) AS Incoming_amount,
+	FORMAT(SUM(CASE WHEN `type` = 'VYDAJ' THEN amount END), 2) AS Outgoing_amount,
+	FORMAT(SUM(CASE WHEN `type` = 'PRIJEM' THEN amount WHEN `type` = 'VYDAJ' THEN -amount END),2) AS Difference
 FROM trans
 GROUP BY account_id
 ORDER BY Difference DESC;
 
-
+# También se puede responder con una subconsulta de la siguiente forma:
+SELECT account_id, (INCOMING - OUTGOING) AS Difference 
+FROM (
+    SELECT account_id, 
+        FLOOR(SUM(CASE WHEN `type` = 'PRIJEM' THEN amount END)) AS 'INCOMING',
+        FLOOR(SUM(CASE WHEN `type` = 'VYDAJ' THEN amount END)) AS 'OUTGOING'
+    FROM trans 
+    GROUP BY account_id
+    ) AS dif
+ORDER BY 2 DESC
+LIMIT 10;
